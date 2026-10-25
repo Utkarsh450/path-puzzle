@@ -4,7 +4,7 @@
 # The instrumented tests are installed and run with adb directly (not connectedAndroidTest),
 # so the game and its saved progress stay on the device; only the test APK is removed.
 # Full Gradle output is written to test.log.
-param([switch]$UnitOnly)
+param([switch]$UnitOnly, [switch]$Full)
 $ErrorActionPreference = 'Stop'
 Set-Location -Path $PSScriptRoot
 
@@ -25,7 +25,10 @@ adb install -r app\build\outputs\apk\debug\app-debug.apk
 if ($LASTEXITCODE -ne 0) { throw 'adb install (app) failed' }
 adb install -r app\build\outputs\apk\androidTest\debug\app-debug-androidTest.apk
 if ($LASTEXITCODE -ne 0) { throw 'adb install (tests) failed' }
-$out = adb shell am instrument -w com.utkarsh.pathpuzzle.test/android.test.InstrumentationTestRunner
+$classes = 'AdsIntegrationTest,BoardIntegrationTest,ChaosTest,DuelIntegrationTest,GameStateIntegrationTest,RenderingTest,RushIntegrationTest,StoreIntegrationTest,StoreShotsTest,UiFlowTest'
+if ($Full) { $classes += ',LayoutSizesTest,MonkeyTest' }
+$classList = ($classes -split ',' | ForEach-Object { "com.arrowpuzzle.game.$_" }) -join ','
+$out = adb shell am instrument -w -e class $classList com.utkarsh.pathpuzzle.test/android.test.InstrumentationTestRunner
 $out | ForEach-Object { Write-Host $_ }
 adb uninstall com.utkarsh.pathpuzzle.test | Out-Null
 if (($out -join "`n") -match 'OK \(\d+ tests?\)') { Write-Host 'TESTS-DONE' } else { Write-Host 'TESTS-FAILED (device)'; exit 1 }
