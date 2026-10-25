@@ -212,14 +212,18 @@ class GameState(private val store: Store, private val sfx: Sfx, private val hapt
     }
 
     private fun replayMoves(b: Board, log: String) {
+        // A saved game is replayed move by move. Anything unreadable (a damaged save, or one from a
+        // version with a different token format) is skipped rather than crashing every "Continue".
         for (tok in log.split(';')) {
             if (tok.isEmpty()) continue
+            val num = tok.substring(1).trimEnd('r').toIntOrNull()
             when (tok[0]) {
-                't' -> { val rev = tok.endsWith("r"); b.tap(tok.substring(1).trimEnd('r').toInt(), rev) }
-                'e' -> b.erase(tok.substring(1).toInt())
+                't' -> { if (num == null) continue; b.tap(num, tok.endsWith("r")) }
+                'e' -> { if (num == null) continue; b.erase(num) }
                 'm' -> { lives--; mistakes++ }
-                'r' -> redOnReplay.add(tok.substring(1).toInt())
+                'r' -> { if (num == null) continue; redOnReplay.add(num) }
                 'c' -> { lives = 1; secondChanceUsed = true }
+                else -> continue
             }
             moveLog.append(tok).append(';')
         }
