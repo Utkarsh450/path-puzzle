@@ -1,0 +1,20 @@
+# Secrets: the upload key and the real AdMob ids never go in git (keep a private backup of signing/)
+signing/*
+!signing/ads.properties.example
+*.jks
+*.keystore
+keystore.properties
+local.properties
+
+# Build output and caches
+build/
+.gradle/
+.kotlin/
+*.log
+dist/
+*.aab
+*.apk
+
+# Local tool settings
+.claude/
+.cxx/
