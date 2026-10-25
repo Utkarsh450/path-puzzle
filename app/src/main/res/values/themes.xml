@@ -1,0 +1,14 @@
+<resources>
+    <!-- ChaiUI background (dark is the default); GameView recolours the bars for the light theme. -->
+    <color name="bg">#0A0A0A</color>
+    <!-- Behind the logo on the Android 12+ splash screen. -->
+    <color name="splash_icon_bg">#161616</color>
+
+    <style name="Theme.PathPuzzle" parent="android:Theme.Material.NoActionBar">
+        <!-- the logo tile centred on the dark page while the app starts (Android 11 and older) -->
+        <item name="android:windowBackground">@drawable/splash_window</item>
+        <item name="android:statusBarColor">@color/bg</item>
+        <item name="android:navigationBarColor">@color/bg</item>
+        <item name="android:windowLightStatusBar">false</item>
+    </style>
+</resources>
