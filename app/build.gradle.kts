@@ -35,7 +35,7 @@ android {
         applicationId = "com.utkarsh.pathpuzzle"
         minSdk = 26
         targetSdk = 36
-        versionCode = 3
+        versionCode = 4
         versionName = "1.0"
         // The platform's own JUnit 3 runner: instrumented tests need no AndroidX libraries.
         testInstrumentationRunner = "android.test.InstrumentationTestRunner"
