@@ -1,0 +1,8 @@
+# Copy to signing/ads.properties and fill in after you add the app in AdMob (admob.google.com):
+#   Apps > Add app > Android > "Path Puzzle" (package com.utkarsh.pathpuzzle) gives the App ID,
+#   then Ad units > Add ad unit gives one Rewarded and one Interstitial unit.
+# Publisher id: pub-1339411307978525 (the part before the slash/tilde in every id below).
+# Without ads.properties a release build uses Google's sample ids and shows test ads only.
+admobAppId=ca-app-pub-1339411307978525~XXXXXXXXXX
+rewardedUnit=ca-app-pub-1339411307978525/XXXXXXXXXX
+interstitialUnit=ca-app-pub-1339411307978525/XXXXXXXXXX
