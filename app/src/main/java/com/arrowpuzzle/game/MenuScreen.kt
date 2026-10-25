@@ -21,6 +21,12 @@ class MenuScreen(private val v: GameView) {
     private var time = 0f
     private var tabAge = 9f
 
+    /** The Main tab scrolls when the screen is too short for the hero and the mode cards. */
+    private var scroll = 0f
+    private var maxScroll = 0f
+
+    fun onDrag(dy: Float) { if (tab == Tab.MAIN) scroll = (scroll - dy).coerceIn(0f, maxScroll) }
+
     private var month: YearMonth = YearMonth.now()
     private var selected: LocalDate = LocalDate.now()
 
@@ -28,7 +34,7 @@ class MenuScreen(private val v: GameView) {
 
     fun layout(width: Float, height: Float) { w = width; h = height }
 
-    fun select(t: Tab) { if (tab != t) { tab = t; tabAge = 0f } }
+    fun select(t: Tab) { if (tab != t) { tab = t; tabAge = 0f; scroll = 0f } }
 
     val needsFrame get() = tabAge < .4f
 
@@ -53,7 +59,6 @@ class MenuScreen(private val v: GameView) {
     /** Navbar: wordmark, then coins, the theme switcher and settings. */
     private fun drawNavbar(c: Canvas, cy: Float) {
         ui.logoTile(c, pad + ui.dp(15f), cy, ui.dp(30f))
-        ui.text(c, "Path Puzzle", pad + ui.dp(38f), cy + ui.dp(7f), ui.dp(20f), C.FG, Paint.Align.LEFT, ui.brand)
         val gx = w - pad - ui.dp(10f)
         ui.iconGear(c, gx, cy, ui.dp(22f), C.FG)
         ui.hit("m_settings", RectF(gx - ui.dp(24f), cy - ui.dp(24f), w, cy + ui.dp(24f))) { v.showSettings(false) }
@@ -63,6 +68,11 @@ class MenuScreen(private val v: GameView) {
             v.setDarkTheme(!store.darkTheme)
         }
         coinPill(c, tx - ui.dp(26f), cy)
+        // the name takes the room the coins leave (a 320 dp phone has little); too little and it is left out
+        val titleX = pad + ui.dp(38f)
+        val room = (tx - ui.dp(26f) - coinPillWidth()) - ui.dp(10f) - titleX
+        val size = ui.fitSize("Path Puzzle", ui.dp(20f), room, ui.brand)
+        if (size >= ui.dp(13f)) ui.text(c, "Path Puzzle", titleX, cy + size * .35f, size, C.FG, Paint.Align.LEFT, ui.brand)
     }
 
     private fun card(c: Canvas, id: String, r: RectF, title: String, caption: String, done: Boolean,
@@ -71,8 +81,10 @@ class MenuScreen(private val v: GameView) {
         ui.card(c, r, pressed)
         val ip = ui.dp(16f)
         icon(r.left + ip + ui.dp(12f), r.top + ip + ui.dp(12f), ui.dp(26f))
-        ui.text(c, title, r.left + ip, r.top + ui.dp(68f), ui.dp(16f), C.FG, Paint.Align.LEFT, ui.displayBold)
-        ui.text(c, caption, r.left + ip, r.top + ui.dp(88f), ui.dp(13.5f), C.MUTED, Paint.Align.LEFT, ui.medium)
+        ui.text(c, title, r.left + ip, r.top + ui.dp(68f), ui.fitSize(title, ui.dp(16f), r.width() - ip * 2, ui.displayBold),
+            C.FG, Paint.Align.LEFT, ui.displayBold)
+        ui.text(c, caption, r.left + ip, r.top + ui.dp(88f), ui.fitSize(caption, ui.dp(13.5f), r.width() - ip * 2, ui.medium),
+            C.MUTED, Paint.Align.LEFT, ui.medium)
         val by = r.bottom - ui.dp(14f) - ui.dp(32f)
         if (r.height() < ui.dp(146f)) {
             if (done) ui.iconCheck(c, r.right - ip - ui.dp(8f), r.top + ip + ui.dp(12f), ui.dp(14f), C.GREEN)
@@ -86,7 +98,7 @@ class MenuScreen(private val v: GameView) {
     }
 
     private fun drawMain(c: Canvas, bottom: Float) {
-        val top = v.insetTop + ui.dp(10f)
+        val top = v.insetTop + ui.dp(10f) - scroll
         drawNavbar(c, top + ui.dp(22f))
 
         // hero: one central element, the level you are on
@@ -117,7 +129,7 @@ class MenuScreen(private val v: GameView) {
         val wide = cards.size % 2
         val rowsN = (cards.size + 1) / 2
         // short screens get compact cards (the whole card is the button) rather than running off the page
-        val cardH = min(ui.dp(170f), (bottom - y - ui.dp(16f) - (rowsN - 1) * gap) / rowsN).coerceAtLeast(ui.dp(104f))
+        val cardH = min(ui.dp(170f), (bottom - (y + scroll) - ui.dp(16f) - (rowsN - 1) * gap) / rowsN).coerceAtLeast(ui.dp(104f))
         for ((i, m) in cards.withIndex()) {
             val slot = if (i < wide) 0 else i + wide
             val x0 = if (i < wide) pad else pad + (slot % 2) * (cardW + gap)
@@ -125,6 +137,10 @@ class MenuScreen(private val v: GameView) {
             val x1 = if (i < wide) w - pad else x0 + cardW
             card(c, m.id, RectF(x0, y0, x1, y0 + cardH), m.title, m.caption, m.done, { x, yy, s -> m.icon(c, x, yy, s) }, m.action)
         }
+        // how far the page can scroll: what hangs below the tab bar's top edge when not scrolled
+        val contentBottom = y + rowsN * cardH + (rowsN - 1) * gap + scroll
+        maxScroll = (contentBottom + ui.dp(16f) - bottom).coerceAtLeast(0f)
+        if (scroll > maxScroll) scroll = maxScroll
     }
 
     private class ModeCard(val id: String, val title: String, val caption: String, val done: Boolean,

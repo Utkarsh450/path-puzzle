@@ -223,6 +223,52 @@ class RenderingTest : InstrumentationTestCase() {
         assertTrue(context.resources.getDrawable(context.resources.getIdentifier("ic_launcher", "mipmap", context.packageName), null) != null)
     }
 
+    /** A view sized in dp, as a small phone, a normal one or a tablet would be. */
+    private fun viewDp(wDp: Int, hDp: Int): GameView = main {
+        val d = context.resources.displayMetrics.density
+        val w = (wDp * d).toInt(); val h = (hDp * d).toInt()
+        val v = GameView(context)
+        v.measure(View.MeasureSpec.makeMeasureSpec(w, View.MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(h, View.MeasureSpec.EXACTLY))
+        v.layout(0, 0, w, h)
+        v
+    }
+
+    /** Every mode card must be reachable (by scrolling) and inside the screen, even on short, narrow phones. */
+    fun testMainMenuIsReachableOnSmallScreens() {
+        for ((wDp, hDp) in listOf(320 to 568, 360 to 640, 360 to 740, 412 to 915)) {
+            val v = viewDp(wDp, hDp)
+            drawFrames(v, 10)
+            main { v.menu.onDrag(-100000f) }           // scroll to the bottom
+            drawFrames(v, 4)
+            val hits = main { v.ui.hits.associate { it.id to RectF(it.r) } }
+            for (id in listOf("m_play", "m_daily", "m_rush", "m_duel", "tab_0")) assertTrue("$wDp x $hDp: $id has no button", hits.containsKey(id))
+            for (id in listOf("m_daily", "m_rush", "m_duel")) {
+                val r = hits[id]!!
+                assertTrue("$wDp x $hDp: $id leaves the screen sideways ($r)", r.left >= 0f && r.right <= v.width)
+                assertTrue("$wDp x $hDp: $id ends under the tab bar (${r.bottom} > ${hits["tab_0"]!!.top})", r.bottom <= hits["tab_0"]!!.top + 1f)
+            }
+            main { v.menu.onDrag(100000f) }            // and back to the top
+            drawFrames(v, 4)
+            val top = main { v.ui.hits.first { it.id == "m_play" }.r.top }
+            assertTrue("$wDp x $hDp: the play button is cut off at the top ($top)", top > 0f)
+        }
+    }
+
+    /** Text that has to fit a box is shrunk, never allowed to spill over. */
+    fun testFitSizeNeverSpillsOver() {
+        val ui = Ui(context.resources)
+        val face = ui.medium
+        for (text in listOf("Two players, one phone", "Path Puzzle", "Daily challenge", "A", "A very long caption that cannot possibly fit anywhere")) {
+            for (maxW in listOf(40f, 118f, 200f, 600f)) {
+                val size = ui.fitSize(text, 40f, maxW, face)
+                assertTrue("$text: size $size", size in 0f..40f)
+                assertTrue("$text at $maxW: ${ui.textW(text, size, face)} is wider", ui.textW(text, size, face) <= maxW + 1f)
+            }
+        }
+        assertEquals("nothing fits in no room", 0f, ui.fitSize("x", 20f, 0f, face))
+        assertEquals("text that fits is left alone", 20f, ui.fitSize("x", 20f, 500f, face))
+    }
+
     /** The loading screen shows the logo with its orange glow and a progress bar, in both themes. */
     fun testLoadingScreenShowsTheLogo() {
         for (dark in listOf(true, false)) {

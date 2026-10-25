@@ -382,6 +382,7 @@ class GameView(context: Context) : View(context) {
                 if (e.pointerCount == 1 && !scaler.isInProgress) {
                     if (!moved && hypot(e.x - downX, e.y - downY) > slop) { moved = true; ui.pressedId = null }
                     if (moved && boardTouch) { game.onDrag(e.x - lastX, e.y - lastY); invalidate() }
+                    else if (moved && !inGame && overlays.isEmpty()) { menu.onDrag(e.y - lastY); invalidate() }
                     lastX = e.x; lastY = e.y
                 }
             }

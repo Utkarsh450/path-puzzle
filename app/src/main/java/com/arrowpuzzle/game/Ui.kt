@@ -91,6 +91,19 @@ class Ui(private val res: Resources) {
         c.drawText(s, x, y, tp)
     }
 
+    /** [size], or smaller so that [text] is at most [maxW] wide. */
+    fun fitSize(text: String, size: Float, maxW: Float, face: Typeface = bold): Float {
+        if (maxW <= 0f) return 0f
+        // measured widths are not exactly proportional to the size (hinting), so check again after shrinking
+        var s = size
+        repeat(4) {
+            val w = textW(text, s, face)
+            if (w <= maxW) return s
+            s *= maxW / w * .99f
+        }
+        return s
+    }
+
     fun textW(s: String, size: Float, face: Typeface = bold): Float {
         tp.typeface = face; tp.textSize = size; tp.letterSpacing = 0f
         return tp.measureText(s)
