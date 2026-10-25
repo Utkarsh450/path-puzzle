@@ -89,6 +89,7 @@ class AdMobProvider(private val activity: Activity) : AdProvider {
     private var loadingRewarded = false
     private var loadingInterstitial = false
     private var retry = 0
+    private var retryPending = false
 
     init {
         // Keep the ad SDK off the start-up path: the first screens draw first, consent and ads follow.
@@ -120,6 +121,8 @@ class AdMobProvider(private val activity: Activity) : AdProvider {
 
     private fun load() {
         if (!started || activity.isDestroyed) return
+        // Started offline? Keep checking quietly, so ads appear once the player gets a connection.
+        if (!online()) { retryLater(); return }
         if (rewarded == null && !loadingRewarded && online()) {
             loadingRewarded = true
             RewardedAd.load(activity, BuildConfig.REWARDED_UNIT, AdRequest.Builder().build(), object : RewardedAdLoadCallback() {
@@ -138,8 +141,10 @@ class AdMobProvider(private val activity: Activity) : AdProvider {
 
     /** Back off (up to a minute) so a bad connection never hammers the ad server. */
     private fun retryLater() {
+        if (retryPending) return          // one waiting retry at a time, however often load() is asked for
+        retryPending = true
         retry = minOf(retry + 1, 6)
-        main.postDelayed({ load() }, 10_000L * retry)
+        main.postDelayed({ retryPending = false; load() }, 10_000L * retry)
     }
 
     override val rewardedReady get() = rewarded != null
